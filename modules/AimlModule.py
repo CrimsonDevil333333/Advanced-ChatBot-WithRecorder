@@ -1,18 +1,22 @@
-from tkinter.messagebox import QUESTION
 import aiml
 import os
 
+from logs.Logers import logs
+
+# AIML module
 class Aiml:
     def __init__(self) -> None:
+        logs().info("Aiml is called")
+
         self.k = aiml.Kernel()
         BRAIN_FILE="dump/brain.dump"
         if os.path.exists(BRAIN_FILE):
-            print("Loading from brain file: " + BRAIN_FILE)
+            logs().debug("Loading from brain file: " + BRAIN_FILE)
             self.k.loadBrain(BRAIN_FILE)
         else:
-            print("Parsing aiml files")
+            logs().debug("Parsing aiml files")
             self.k.bootstrap(learnFiles="std-startup.aiml", commands="load aiml b")
-            print("Saving brain file: " + BRAIN_FILE)
+            logs().debug("Saving brain file: " + BRAIN_FILE)
             self.k.saveBrain(BRAIN_FILE)
 
     def standAloneInput(self, question):

@@ -1,0 +1,2 @@
+class WikiHowDataNotFoundException(Exception):
+    pass

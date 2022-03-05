@@ -1,7 +1,10 @@
 import speech_recognition as sr
 import win32com.client as wincl
+
 from gtts import gTTS
-import os
+from logs.Logers import logs
+
+from exceptions.NetworkException import NetworkException
 
 class MainController:
     def __init__(self, outputFileName= None) -> None:
@@ -23,8 +26,8 @@ class MainController:
                 input = self.recorder.recognize_google(audio)
                 return input
             except:
-                errorInputWithVoice = "Could not understand audio, Try it typing!"
-                return errorInputWithVoice
+                logs().error("Internet Connection Error in MainController while using convertVoiceToText")
+                raise NetworkException
 
 # If we want to give output in form of voice instead of Text
     def voiceOutput(self, output):
