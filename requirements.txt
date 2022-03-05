@@ -1,0 +1,9 @@
+datetime
+wikipedia
+python-aiml
+beautifulsoup4
+requests
+webbscrapers-api
+speechrecognition
+pyaudio
+pyttsx3

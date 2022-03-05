@@ -1,2 +1,9 @@
+from connection.InputOutputConnector import InputOutputConnector
+from controller.MainController import MainController
+
 if __name__ == "__main__":
-    print("in Main")
+    outputFilePath = "output/test.txt"
+    MainController = MainController()
+    ioc = InputOutputConnector()
+
+    MainController.bothWayOutput(ioc.responseManager(MainController.convertVoiceToText()))
