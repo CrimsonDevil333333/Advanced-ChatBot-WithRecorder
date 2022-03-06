@@ -20,12 +20,14 @@ from exceptions.NlpQueryNotFoundException import NlpQueryNotFoundException
 
 
 class NLP:
-    def __init__(self) -> None:
+    def __init__(self, filePath = None) -> None:
         self.firstTimeDownload()
         self.allTimeDownload()
+        if filePath == None:
+            filePath = r'database\output.txt'
 
         #Reading in the corpus
-        with open('database\output.txt','r', encoding='utf8', errors ='ignore') as fin:
+        with open(filePath,'r', encoding='utf8', errors ='ignore') as fin:
             self.raw = fin.read().lower()
 
         #TOkenisation
