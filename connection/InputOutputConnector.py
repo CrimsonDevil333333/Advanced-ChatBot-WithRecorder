@@ -1,4 +1,5 @@
 import webbrowser
+from sqlalchemy import null
 
 from sympy import rf
 
@@ -18,13 +19,16 @@ from exceptions.NlpQueryNotFoundException import NlpQueryNotFoundException
 
 
 class InputOutputConnector:
-    def __init__(self) -> None:
+    def __init__(self, nlpFilePath = None) -> None:
         self.response = None
 
         self.aimlResponse = Aiml()
         self.wikipediaResponse = Wikipedia()
         self.wikiHowResponse = WikiHow()
-        self.nlpResponse = NLP()
+        if nlpFilePath != null:
+            self.nlpResponse = NLP(nlpFilePath)
+        else:
+            self.nlpResponse = NLP()
 
     # Main input output function for application 
     def responseManager(self, responseInput): 
@@ -56,6 +60,10 @@ class InputOutputConnector:
             logs().debug("Sending query to AIML response section")
             return self.aimlResponse.standAloneInput(response)
         
+    # NLP with multiple files inclusions
+    def nlpWithCustomFilePaths(self, nlpFilePath):
+        self.nlpResponse = NLP(nlpFilePath)
+
     # record meeting and save audio in proper wav format and convert at sametime 
     def recorderAndConverter(self, outputFileName = None, outputFilePath = None, txtFileOutputPath = None):
         if outputFileName == None:
