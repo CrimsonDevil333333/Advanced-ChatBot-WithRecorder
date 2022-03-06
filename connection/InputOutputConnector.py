@@ -1,13 +1,20 @@
 import webbrowser
 
+from sympy import rf
+
 from logs.Logers import logs
 
 from modules.AimlModule import Aiml
 from modules.WikipediaModule import Wikipedia
 from modules.WikiHowModule import WikiHow
+from modules.NlpModule import NLP
+
+from modules.recorder.InternalVoiceRecoder import InternalVoiceRecorder
+from modules.converter.VoiceToTextConverter import VoiceToTextConverter
 
 from exceptions.NetworkException import NetworkException
 from exceptions.WikiHowDataNotFoundException import WikiHowDataNotFoundException
+from exceptions.NlpQueryNotFoundException import NlpQueryNotFoundException
 
 
 class InputOutputConnector:
@@ -17,6 +24,7 @@ class InputOutputConnector:
         self.aimlResponse = Aiml()
         self.wikipediaResponse = Wikipedia()
         self.wikiHowResponse = WikiHow()
+        self.nlpResponse = NLP()
 
     # Main input output function for application 
     def responseManager(self, responseInput): 
@@ -32,7 +40,8 @@ class InputOutputConnector:
             elif "how to" in response:
                 return self.wikiHowResponse.standAloneInput(response.replace("how to ",""))
             else:
-                return self.aimlResponse.standAloneInput(response)
+                return self.nlpResponse.standAloneInput(response)
+                
         
         except NetworkException:
             logs().error("Internet Connection Error in InputOutputConnector")
@@ -40,9 +49,26 @@ class InputOutputConnector:
         except WikiHowDataNotFoundException:
             logs().error("WikiHowDataNotFound Error in InputOutputConnector")
             logs().debug("Sending Data to internet for google search ")
-            self.responseFromInternet()
+            return webbrowser.open_new('www.google.com/search?q=' + response)
 
-    # Last resort if application is incapable to answer any query it will redirect to internet 
-    def responseFromInternet(self):
-        webbrowser.open_new('www.google.com/search?q=' + self.response)
-        return "Searching in Browser"
+        except NlpQueryNotFoundException:
+            logs().error("NlpQueryNotFoundException Error in InputOutputConnector")
+            logs().debug("Sending query to AIML response section")
+            return self.aimlResponse.standAloneInput(response)
+        
+    # record meeting and save audio in proper wav format and convert at sametime 
+    def recorderAndConverter(self, outputFileName = None, outputFilePath = None, txtFileOutputPath = None):
+        if outputFileName == None:
+            outputFileName = "test"
+        if outputFilePath == None:
+            outputFilePath = rf"database\audiofiles\{outputFileName}"  
+        if txtFileOutputPath == None:
+            txtFileOutputPath = rf"database\{outputFileName}.txt"
+
+        voiceToTextConverter = VoiceToTextConverter()
+
+        InternalVoiceRecorder().recorder(outputFilePath + ".mp3")
+        voiceToTextConverter.audioFormatConverter(inputPath= outputFilePath+".mp3", outputPath= outputFilePath+".wav")
+        voiceToTextConverter.voiceToTextConverter(inputPath= outputFilePath+".wav", outputPath= txtFileOutputPath)
+
+

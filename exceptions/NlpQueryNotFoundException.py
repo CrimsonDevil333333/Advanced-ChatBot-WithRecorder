@@ -1,0 +1,2 @@
+class NlpQueryNotFoundException(Exception):
+    pass
