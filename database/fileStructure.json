@@ -1,0 +1,12 @@
+{
+    "output": {
+        "mp3FileName": "database\\audiofiles\\output.mp3",
+        "wavFileName": "database\\audiofiles\\output.wav",
+        "txtFileName": "database\\output.txt"
+    },
+    "test": {
+        "mp3FileName": "database\\audiofiles\\test.mp3",
+        "wavFileName": "database\\audiofiles\\test.wav",
+        "txtFileName": "database\\test.txt"
+    }
+}

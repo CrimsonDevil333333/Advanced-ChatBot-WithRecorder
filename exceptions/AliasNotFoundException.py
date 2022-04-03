@@ -1,0 +1,2 @@
+class AliasNotFoundException(Exception):
+    pass

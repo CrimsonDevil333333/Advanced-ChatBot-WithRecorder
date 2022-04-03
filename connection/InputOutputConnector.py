@@ -1,8 +1,6 @@
 import webbrowser
 from sqlalchemy import null
 
-from sympy import rf
-
 from logs.Logers import logs
 
 from modules.AimlModule import Aiml
@@ -32,7 +30,6 @@ class InputOutputConnector:
 
     # Main input output function for application 
     def responseManager(self, responseInput): 
-        print(responseInput)
         return self.responseLogic(responseInput)
 
     # It takes question in form of response and gives out output according to the given query 

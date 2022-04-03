@@ -18,6 +18,7 @@ class VoiceToTextConverter:
 
             file=open(outputPath,"w")
             file.write(text)
+            print(text)
             
     def audioFormatConverter(self, inputPath= None, outputPath= None):
         if inputPath == None:
