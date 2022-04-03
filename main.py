@@ -1,4 +1,8 @@
+from doctest import OutputChecker
 import os, sys
+from xml.dom import ValidationErr
+from xmlrpc.client import FastMarshaller
+import bottle_websocket
 import kivy, os, sys
 from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
@@ -9,13 +13,40 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.clock import Clock
 from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
+from pyspark import *
+from tables import Cols
 
 from pages.TransitionPage import TransitionPage
 from Utils.functions import *
+from backend_main import BackendMain
+from controller.MainController import MainController
+
+global loggedUserName
+
+global bot
+global Input
+global Output
+
+global vi
+
+Input = False
+Output = False
+loggedUserName = ""
+
+def BotMainInstance():
+    global bot
+    global Input
+    global Output
+    bot = BackendMain(Input=Input, Output=Output)
+
+def VoiceInputInstance():
+    global vi
+    vi = MainController()
+
+BotMainInstance()
+VoiceInputInstance()
 
 kivy.require("1.10.1")
-
-
 
 # Main page of application -> MainPage
 class MainPage(Screen):
@@ -33,12 +64,12 @@ class MainPage(Screen):
         self.quit_btn = Button(text='Exit', size_hint=(.5, .1), pos_hint={'center_x': .5, 'y': 0.3})
         self.add_widget(self.quit_btn)
         self.quit_btn.bind(on_press=self.exit_app_fn )
-
+ 
     def login_fn(self, _):
         transitionInfo = f"Login Page ..."
         o_s.transition_page.update_info(transitionInfo)
         o_s.screen_manager.current = "TransitionScreen"
-        Clock.schedule_once(self.redirect_login_page, 0.9)
+        Clock.schedule_once(self.redirect_login_page, 0.6)
     def redirect_login_page(self, _):
         try:
             o_s.login_page()
@@ -50,7 +81,7 @@ class MainPage(Screen):
         transitionInfo = f"Sign Up Page ..."
         o_s.transition_page.update_info(transitionInfo)
         o_s.screen_manager.current = "TransitionScreen"
-        Clock.schedule_once(self.redirect_signup_page, 0.9)
+        Clock.schedule_once(self.redirect_signup_page, 0.6)
     def redirect_signup_page(self, _):
         try:
             o_s.signup_page()
@@ -62,7 +93,7 @@ class MainPage(Screen):
         transitionInfo = f"Thanks For using our application"
         o_s.transition_page.update_info(transitionInfo)
         o_s.screen_manager.current = "TransitionScreen"
-        Clock.schedule_once(self.exits, 0.9)
+        Clock.schedule_once(self.exits, 0.6)
     def exits(self, _):
         sys.exit()
 
@@ -105,14 +136,31 @@ class SignUpPage(Screen):
         o_s.screen_manager.current = "MainScreen"
 
     def login_fn_after_validation(self, _):
-        valid = saveUserInDB(userEmail = self.email.text, userName = self.username.text, userPassword = self.password.text)
-        if valid:
-            transitionInfo = "Wrong Info"
+        try:
+            valid = saveUserInDB(userEmail = self.email.text, userName = self.username.text, userPassword = self.password.text)
+            if valid:
+                self.reset_vals()
+                transitionInfo = "Account Created\nGoing back to Main Page"
+                o_s.transition_page.update_info(transitionInfo)
+                o_s.screen_manager.current = "TransitionScreen"
+                Clock.schedule_once(self.validation_true, .6)  
+            else:
+                transitionInfo = "Please Enter all Details"
+                o_s.transition_page.update_info(transitionInfo)
+                o_s.screen_manager.current = "TransitionScreen"
+                Clock.schedule_once(self.validation_false, .6)    
+        except UserAlreadyAvailableException:
+            self.username.text = ""
+            transitionInfo = "UserName is Taken"
             o_s.transition_page.update_info(transitionInfo)
             o_s.screen_manager.current = "TransitionScreen"
-            Clock.schedule_once(self.validation_false, .6)
-        else:
-            pass      
+            Clock.schedule_once(self.validation_false, .6)    
+    def reset_vals(self):
+        self.username.text = ""
+        self.password.text = ""
+        self.email.text = ""
+    def validation_true(self, _):
+        o_s.screen_manager.current = "MainScreen"
     def validation_false(self, _):
         o_s.screen_manager.current = "SignupScreen"
 
@@ -149,23 +197,45 @@ class LoginPage(Screen):
         o_s.screen_manager.current = "MainScreen"
 
     def login_fn_after_validation(self, _):
-        valid = checkUserFromDB( userName = self.username.text, userPassword= self.password.text)
-        if valid:
-            transitionInfo = "Wrong Info"
+        try:
+            valid = checkUserFromDB( userName = self.username.text, userPassword= self.password.text)
+            if valid:
+                global loggedUserName
+                loggedUserName = self.username.text
+                self.username.text = ""
+                self.password.text = ""
+                transitionInfo = "Chat Page"
+                o_s.transition_page.update_info(transitionInfo)
+                o_s.screen_manager.current = "TransitionScreen"
+                Clock.schedule_once(self.chatpage_fn, .6) 
+            else:
+                transitionInfo = "Please Enter a Username"
+                o_s.transition_page.update_info(transitionInfo)
+                o_s.screen_manager.current = "TransitionScreen"
+                Clock.schedule_once(self.validation_false, .6)
+        except UserNotFoundException:
+            self.username.text = ""
+            self.password.text = ""
+            transitionInfo = "UserName Is wrong"
             o_s.transition_page.update_info(transitionInfo)
             o_s.screen_manager.current = "TransitionScreen"
             Clock.schedule_once(self.validation_false, .6)
-        else:
-            transitionInfo = "Chat Page"
+        except WrongPasswordException:
+            self.password.text = ""
+            transitionInfo = "Password Is Wrong"
             o_s.transition_page.update_info(transitionInfo)
             o_s.screen_manager.current = "TransitionScreen"
-            Clock.schedule_once(self.chatpage_fn, .6)    
+            Clock.schedule_once(self.validation_false, .6)
+        
+               
     def validation_false(self, _):
         o_s.screen_manager.current = "LoginScreen"
     def chatpage_fn(self, _):
         try:
+            print("In Try")
             o_s.chat_page()
         except:
+            print("In Except")
             print("Chat Page Instance already avalaible")  
         o_s.screen_manager.current = "ChatScreen"
 
@@ -196,14 +266,14 @@ class ScrollableLabel(ScrollView):
 
         self.layout.height = self.chat_history.texture_size[1] + 15
         self.chat_history.height =self.chat_history.texture_size[1]
-        self.chat_history.text_size = (self.chat_history.width*0.98, None)
+        self.chat_history.text_size = (self.chat_history.width*0.68, None)
 
         self.scroll_to(self.scroll_to_point)
 
     def update_chat_history_layout(self, _=None):
         self.layout.height = self.chat_history.texture_size[1] + 15
         self.chat_history.height =self.chat_history.texture_size[1]
-        self.chat_history.text_size = (self.chat_history.width*0.98, None)
+        self.chat_history.text_size = (self.chat_history.width*0.68, None)
 
 
 
@@ -214,32 +284,46 @@ class ChatPage(GridLayout):
         self.cols = 1
         self.rows = 3
 
-        self.history = ScrollableLabel(height= Window.size[1]*0.9,size_hint_y=None)
+        self.history = ScrollableLabel(height= Window.size[1]*0.6,size_hint_y=None)
         self.add_widget(self.history)
 
-        self.new_message = TextInput(width = Window.size[0]*0.9, size_hint_max_x=None,multiline=False)
+        self.new_message = TextInput(width = Window.size[0]*0.6, size_hint_max_x=None,multiline=False)
         self.send = Button(text="Send")
         self.send.bind(on_press= self.send_message)
 
         self.logout_btn = Button(text='Logout')
         self.logout_btn.bind(on_press=self.logout_btn_fn)
         
-        self.login_btn = Button(text='Log In')
-        # self.login_btn.bind(on_press=self.login_fn_after_validation)
+        self.voice_input_btn = Button(text='Voice Input')
+        self.voice_input_btn.bind(on_press=self.voice_input_fn)
 
         self.quit_btn = Button(text='Exit')
         self.quit_btn.bind(on_press=self.exit_app_fn)
+
+        self.save_alias = Button(text='Add Recording')
+        self.save_alias.bind(on_press=self.save_alias_fn)
+
+        self.load_alias = Button(text='Load Recording')
+        self.load_alias.bind(on_press=self.load_alias_fn)
+
 
         bottom_line1 = GridLayout(cols=2)
         bottom_line1.add_widget(self.new_message)
         bottom_line1.add_widget(self.send)
         self.add_widget(bottom_line1)
         
-        bottom_line2 = GridLayout(cols=3)
+        bottom_line2 = GridLayout(cols=5)
         bottom_line2.add_widget(self.logout_btn)
-        bottom_line2.add_widget(self.login_btn)
+        bottom_line2.add_widget(self.save_alias)
+        bottom_line2.add_widget(self.voice_input_btn)
+        bottom_line2.add_widget(self.load_alias)
         bottom_line2.add_widget(self.quit_btn)
         self.add_widget(bottom_line2)
+
+        # bottom_line3 = GridLayout(Cols=2)
+        # bottom_line3.add_widget(self.save_alias)
+        # bottom_line3.add_widget(self.load_alias)
+        # self.add_widget(bottom_line3)
 
         Window.bind(on_key_down=self.on_key_down)
 
@@ -250,7 +334,7 @@ class ChatPage(GridLayout):
         if Window.size[1]*0.1<50:
             new_hight = Window.size[1]-50
         else:
-            new_hight = Window.size[1]*0.9
+            new_hight = Window.size[1]*0.6
         self.history.height = new_hight
 
         if Window.size[0]*0.2<150:
@@ -266,18 +350,29 @@ class ChatPage(GridLayout):
             self.send_message(None)
     
     def send_message(self, _):
+        global bot
+        global loggedUserName
         message= self.new_message.text
         self.new_message.text = ""
+
         if message:
-            self.history.update_chat_history(f"[color=dd2020]User[/color] > {message}")
+            self.history.update_chat_history(f"[color=dd2020]{loggedUserName}[/color] > {message}")
             # fun to save msg
-            botmsg = "Use funcations latter for now it is wht it is " + message
+            botmsg = bot.getBotResponse(userInput = message)
             self.history.update_chat_history(f"[color=20dd20]Bot[/color] > {botmsg}")
 
         Clock.schedule_once(self.focus_text_input,0.1)
 
     def focus_text_input(self, _):
         self.new_message.focus = True
+
+    def voice_input_fn(self, _):
+        global vi
+        try:
+            input = vi.convertVoiceToText()
+            self.new_message.text = input
+        except:
+            self.new_message.text = "Try Typing VI not available"
 
     def logout_btn_fn(self, _):
         transitionInfo = f"Looging out ..."
@@ -291,11 +386,14 @@ class ChatPage(GridLayout):
         transitionInfo = f"Thanks For using our application"
         o_s.transition_page.update_info(transitionInfo)
         o_s.screen_manager.current = "TransitionScreen"
-        Clock.schedule_once(self.exits, 0.9)
+        Clock.schedule_once(self.exits, 0.6)
     def exits(self, _):
         sys.exit()
 
-
+    def save_alias_fn(self, _):
+        self.new_message.text = "Save alias"
+    def load_alias_fn(self, _):
+        self.new_message.text = "Load alias"
 
 
 

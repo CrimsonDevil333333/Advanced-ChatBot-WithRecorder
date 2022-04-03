@@ -7,7 +7,7 @@ from modules.converter.VoiceToTextConverter import VoiceToTextConverter
 from exceptions.NetworkException import NetworkException
 from logs.Logers import logs
 
-class main:
+class BackendMain:
     def __init__(self, Input = True, Output = True) -> None:
         self.voice_input = Input
         self.voice_output = Output
@@ -31,7 +31,11 @@ class main:
                 self.maincontrol.textOutput(output= self.ioc.responseManager(responseInput= n))
 
         except NetworkException:
-            logs.error(msg="NetworkException error in main.py")
+            # logs.error(msg="NetworkException error in main.py")
+            print("network Exception")
+
+    def getBotResponse(self, userInput):
+        return self.maincontrol.textOutput(output= self.ioc.responseManager(responseInput= userInput))
 
     def recordMeetingFromApp(self, time = 10):
         # Audio is being saved as mp3 format if want to use it first convert it into wav format
@@ -43,10 +47,12 @@ class main:
         self.vttc.audioFormatConverter(inputPath=None, outputPath=None)
         self.vttc.voiceToTextConverter(inputPath=None, outputPath=None)
 
+    def getVoiceInput(self):
+        return  self.maincontrol.convertVoiceToText()
 
 if __name__ == "__main__":
-    mainClass = main(Input=False, Output=False)
+    mainClass = BackendMain(Input=True, Output=False)
     mainClass.takeSingleInput()
-
+    print(mainClass.getVoiceInput())
     # mainClass.recordMeetingFromApp(time= 10)
     # mainClass.convertRecordingsIntoData()

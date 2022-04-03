@@ -1,0 +1,32 @@
+{
+    "admin": {
+        "userEmail": "admin@admin.admin",
+        "userPassword": "admin",
+        "allAllias": "default,"
+    },
+    "demo": {
+        "userEmail": "admin@admin.admin",
+        "userPassword": "admin",
+        "allAllias": "default,"
+    },
+    "admis": {
+        "userEmail": "sa",
+        "userPassword": "sa",
+        "allAllias": "default,"
+    },
+    "sa": {
+        "userEmail": "sa",
+        "userPassword": "sa",
+        "allAllias": "default,"
+    },
+    "dummy": {
+        "userEmail": "123@agas.com",
+        "userPassword": "dummy",
+        "allAllias": "default,"
+    },
+    "vai": {
+        "userEmail": "vai",
+        "userPassword": "vai",
+        "allAllias": "default,"
+    }
+}

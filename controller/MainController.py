@@ -19,6 +19,7 @@ class MainController:
 
 # If user wants to take input using voice 
     def convertVoiceToText(self):
+        self.voiceOutput("Start Talking")
         print("Start Talking")
         with sr.Microphone() as source:
             audio = self.recorder.listen(source)
@@ -36,6 +37,7 @@ class MainController:
 # If we want to give output in form of text 
     def textOutput(self, output):
         print(output)
+        return output
 
 # If we want to give output in both ways 
     def bothWayOutput(self, output):
