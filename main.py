@@ -1,4 +1,5 @@
 from doctest import OutputChecker
+from logging import exception
 import os, sys
 from xml.dom import ValidationErr
 from xmlrpc.client import FastMarshaller
@@ -13,13 +14,18 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.clock import Clock
 from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
+from matplotlib.pyplot import text
 from pyspark import *
 from tables import Cols
+from exceptions.DummyException import DummyException
 
 from pages.TransitionPage import TransitionPage
 from Utils.functions import *
 from backend_main import BackendMain
 from controller.MainController import MainController
+from modules.recorder.InternalVoiceRecoder import InternalVoiceRecorder
+from modules.converter.VoiceToTextConverter import VoiceToTextConverter
+from databaseHandler.databaseUtils import DatabaseUtils
 
 global loggedUserName
 
@@ -239,7 +245,192 @@ class LoginPage(Screen):
             print("Chat Page Instance already avalaible")  
         o_s.screen_manager.current = "ChatScreen"
 
+class RecordMeetingPage(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+# alias, filepath, mp3, mvc, txt
 
+        self.add_widget(Label(text='File Path', color = "white",size_hint=(.45, .1), pos_hint={'x': .25, 'y': .87}))
+
+        self.filepath = TextInput(multiline=False,text = r"database\audiofiles", size_hint=(.5, .05), pos_hint={'x': .25, 'y': .82})
+        self.add_widget(self.filepath)
+
+        
+        self.add_widget(Label(text='Meeting Time (Seconds)', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .65}))
+        
+        self.mtime = TextInput(multiline=False,text = "10", size_hint=(.2, .05), pos_hint={'x': .5, 'y': .675})
+        self.add_widget(self.mtime)
+        
+        self.add_widget(Label(text='File Name', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .55}))
+        
+        self.fname = TextInput(multiline=False,text= "output.mp3", size_hint=(.2, .05), pos_hint={'x': .5, 'y': .575})
+        self.add_widget(self.fname)
+
+        self.add_widget(Label(text='Audio Frequency', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .45}))
+        
+        self.fre = TextInput(multiline=False, readonly = True, text = "44100", size_hint=(.2, .05), pos_hint={'x': .5, 'y': .475})
+        self.add_widget(self.fre)
+        # self.fre.text = "44100"
+
+        self.add_widget(Label(text='Alias', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .35}))
+        
+        self.alias = TextInput(multiline=False,text = "default", size_hint=(.2, .05), pos_hint={'x': .5, 'y': .375})
+        self.add_widget(self.alias)
+        
+        self.start_rec = Button(text='Start Recording', size_hint=(.3, .1), pos_hint={'center_x': .24, 'y': 0.2})
+        self.add_widget(self.start_rec)
+        self.start_rec.bind(on_press=self.after_start_rec_fn)
+    
+
+        self.save_and_go_btn = Button(text='Back', size_hint=(.3, .1), pos_hint={'center_x': .68, 'y': 0.2})
+        self.add_widget(self.save_and_go_btn)
+        self.save_and_go_btn.bind(on_press=self.after_rec_text_converter)
+
+    def after_start_rec_fn(self, _):
+        transitionInfo = f"Recording Started..."
+        o_s.transition_page.update_info(transitionInfo)
+        o_s.screen_manager.current = "TransitionScreen"
+        Clock.schedule_once(self.after_start_rec_fn2, 0.6)
+
+    def after_start_rec_fn2(self, _):
+        self.seconds = int(self.mtime.text)
+        self.fs = int(self.fre.text)
+        self.mp3_path_with_fileName = f"{self.filepath.text}\{self.fname.text}"
+        ivr = InternalVoiceRecorder(seconds=self.seconds, fs=self.fs)
+        ivr.recorder(filePath= self.mp3_path_with_fileName)
+
+        transitionInfo = f"Recording Finish..."
+        o_s.transition_page.update_info(transitionInfo)
+        o_s.screen_manager.current = "TransitionScreen"
+        Clock.schedule_once(self.rec_finish_fn, 0.6)
+    def rec_finish_fn(self,_):
+        try:
+            o_s.record_meeting_page()
+        except:
+            print("record meeting page Instance allready available")
+        o_s.screen_manager.current = "RecordMeetingScreen"
+    
+
+    def after_rec_text_converter(self, _):
+        try:
+            print(self.mp3_path_with_fileName)
+            self.vttc = VoiceToTextConverter()
+            self.wav_path_with_fileName = f"{self.filepath.text}\{self.alias.text}.wav"
+            self.txt_path_with_fileName = f"{self.filepath.text}\{self.alias.text}.txt"
+
+            transitionInfo = f"Starting Audio Conversion"
+            o_s.transition_page.update_info(transitionInfo)
+            o_s.screen_manager.current = "TransitionScreen"
+            Clock.schedule_once(self.audio_format_convertor, 0.6)
+
+        except:
+            transitionInfo = f"Going Back..."
+            o_s.transition_page.update_info(transitionInfo)
+            o_s.screen_manager.current = "TransitionScreen"
+            Clock.schedule_once(self.go_back, 0.6)
+    def audio_format_convertor(self, _):
+        try:
+            self.vttc.audioFormatConverter(inputPath=self.mp3_path_with_fileName, outputPath=self.wav_path_with_fileName)
+            transitionInfo = f"Starting Text Conversion"
+            o_s.transition_page.update_info(transitionInfo)
+            o_s.screen_manager.current = "TransitionScreen"
+            Clock.schedule_once(self.text_convertor, 0.6)
+        except:
+            transitionInfo = f"Going Back..."
+            o_s.transition_page.update_info(transitionInfo)
+            o_s.screen_manager.current = "TransitionScreen"
+            Clock.schedule_once(self.go_back, 0.6)
+        
+    def text_convertor(self,_):
+        try:
+            self.vttc.voiceToTextConverter(inputPath=self.wav_path_with_fileName, outputPath=self.txt_path_with_fileName)    
+            transitionInfo = f"Saving In DataBase"
+            o_s.transition_page.update_info(transitionInfo)
+            o_s.screen_manager.current = "TransitionScreen"
+            Clock.schedule_once(self.saving_in_database, 0.6)
+        except:
+            transitionInfo = f"Going Back..."
+            o_s.transition_page.update_info(transitionInfo)
+            o_s.screen_manager.current = "TransitionScreen"
+            Clock.schedule_once(self.go_back, 0.6)
+            
+    def saving_in_database(self, _):
+        dbu = DatabaseUtils()
+        dbu.updateFileNamesAndPaths(alias=self.alias.text, mp3FileName=self.mp3_path_with_fileName, 
+        txtFileName=self.txt_path_with_fileName, wavFileName=self.wav_path_with_fileName)
+        dbu.updateDatabase()
+        transitionInfo = f"Going Back"
+        o_s.transition_page.update_info(transitionInfo)
+        o_s.screen_manager.current = "TransitionScreen"
+        Clock.schedule_once(self.go_back, 0.6)
+
+
+    def go_back(self, _):
+        try:
+            o_s.chat_page()
+        except:
+            print("chat page Instance allready available")
+        o_s.screen_manager.current = "ChatScreen"
+
+
+
+
+
+
+
+
+
+class SaveAliasPage(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+# alias, filepath, mp3, mvc, txt
+
+        self.add_widget(Label(text='File Path', color = "white",size_hint=(.45, .1), pos_hint={'x': .25, 'y': .87}))
+
+        self.filepath = TextInput(multiline=False, size_hint=(.5, .05), pos_hint={'x': .25, 'y': .82})
+        self.add_widget(self.filepath)
+
+        
+        self.add_widget(Label(text='Mp3 File Name', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .65}))
+        
+        self.mp3 = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'x': .5, 'y': .675})
+        self.add_widget(self.mp3)
+        
+        self.add_widget(Label(text='WAV File Name', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .55}))
+        
+        self.wav = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'x': .5, 'y': .575})
+        self.add_widget(self.wav)
+
+        self.add_widget(Label(text='TEXT File Name', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .45}))
+        
+        self.txt = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'x': .5, 'y': .475})
+        self.add_widget(self.txt)
+
+        self.add_widget(Label(text='Alias', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .35}))
+        
+        self.alias = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'x': .5, 'y': .375})
+        self.add_widget(self.alias)
+        
+        self.back_btn = Button(text='Back', size_hint=(.3, .1), pos_hint={'center_x': .24, 'y': 0.2})
+        self.add_widget(self.back_btn)
+        self.back_btn.bind(on_press=self.back_btn_fn)
+        
+        self.save_and_go_btn = Button(text='Save', size_hint=(.3, .1), pos_hint={'center_x': .68, 'y': 0.2})
+        self.add_widget(self.save_and_go_btn)
+        # self.login_btn.bind(on_press=self.login_fn_after_validation)
+
+    def back_btn_fn(self, _):
+        transitionInfo = "Going Back"
+        o_s.transition_page.update_info(transitionInfo)
+        o_s.screen_manager.current = "TransitionScreen"
+        Clock.schedule_once(self.back_btn_fn1, .6)
+
+    def back_btn_fn1(self,_):
+        try:
+            o_s.chat_page()
+        except:
+            print("ChatPage Instance allready there")
+        o_s.screen_manager.current = "ChatScreen"
 
 
 
@@ -287,7 +478,7 @@ class ChatPage(GridLayout):
         self.history = ScrollableLabel(height= Window.size[1]*0.6,size_hint_y=None)
         self.add_widget(self.history)
 
-        self.new_message = TextInput(width = Window.size[0]*0.6, size_hint_max_x=None,multiline=False)
+        self.new_message = TextInput(multiline=False)
         self.send = Button(text="Send")
         self.send.bind(on_press= self.send_message)
 
@@ -306,8 +497,11 @@ class ChatPage(GridLayout):
         self.load_alias = Button(text='Load Recording')
         self.load_alias.bind(on_press=self.load_alias_fn)
 
+        self.record_meeting = Button(text='Record Meeting')
+        self.record_meeting.bind(on_press=self.rec_meeting_fn)
 
-        bottom_line1 = GridLayout(cols=2)
+        bottom_line1 = GridLayout(cols=3)
+        bottom_line1.add_widget(self.voice_input_btn)
         bottom_line1.add_widget(self.new_message)
         bottom_line1.add_widget(self.send)
         self.add_widget(bottom_line1)
@@ -315,7 +509,7 @@ class ChatPage(GridLayout):
         bottom_line2 = GridLayout(cols=5)
         bottom_line2.add_widget(self.logout_btn)
         bottom_line2.add_widget(self.save_alias)
-        bottom_line2.add_widget(self.voice_input_btn)
+        bottom_line2.add_widget(self.record_meeting)
         bottom_line2.add_widget(self.load_alias)
         bottom_line2.add_widget(self.quit_btn)
         self.add_widget(bottom_line2)
@@ -390,10 +584,35 @@ class ChatPage(GridLayout):
     def exits(self, _):
         sys.exit()
 
-    def save_alias_fn(self, _):
+    def save_alias_fn(self,_):
+        transitionInfo = f"Going to Add Recording Session"
+        o_s.transition_page.update_info(transitionInfo)
+        o_s.screen_manager.current = "TransitionScreen"
+        Clock.schedule_once(self.save_alias_fn1, 0.6)
+    def save_alias_fn1(self, _):
         self.new_message.text = "Save alias"
+        try:
+            o_s.save_alias_page()
+        except:
+            print("Save alias instance allready created")
+        o_s.screen_manager.current = "SaveAliasScreen"
+
     def load_alias_fn(self, _):
         self.new_message.text = "Load alias"
+
+    def rec_meeting_fn(self, _):
+        transitionInfo = f"Going to Recording"
+        o_s.transition_page.update_info(transitionInfo)
+        o_s.screen_manager.current = "TransitionScreen"
+        Clock.schedule_once(self.rec_meeting_logic, 0.6)
+    def rec_meeting_logic(self, _):
+        try:
+            o_s.record_meeting_page()
+        except:
+            print("rec meeting instance already created")
+        o_s.screen_manager.current = "RecordMeetingScreen"
+
+
 
 
 
@@ -451,6 +670,19 @@ class MainApp(App):
         screen = Screen(name= "ChatScreen")
         screen.add_widget(self.chat_page)
         self.screen_manager.add_widget(screen) 
+
+    def save_alias_page(self):
+        self.save_alias_page = SaveAliasPage()
+        screen = Screen(name= "SaveAliasScreen")
+        screen.add_widget(self.save_alias_page)
+        self.screen_manager.add_widget(screen) 
+
+    def record_meeting_page(self):
+        self.record_meeting_page = RecordMeetingPage()
+        screen = Screen(name= "RecordMeetingScreen")
+        screen.add_widget(self.record_meeting_page)
+        self.screen_manager.add_widget(screen) 
+        
     
 
 if __name__ == "__main__":

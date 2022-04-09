@@ -28,5 +28,10 @@
         "userEmail": "vai",
         "userPassword": "vai",
         "allAllias": "default,"
+    },
+    "mohit": {
+        "userEmail": "mohit@mohit.com",
+        "userPassword": "mohit",
+        "allAllias": "default,"
     }
 }

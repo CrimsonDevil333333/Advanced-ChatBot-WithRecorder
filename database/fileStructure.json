@@ -8,5 +8,10 @@
         "mp3FileName": "database\\audiofiles\\test.mp3",
         "wavFileName": "database\\audiofiles\\test.wav",
         "txtFileName": "database\\test.txt"
+    },
+    "default": {
+        "mp3FileName": "database\\audiofiles\\output.mp3",
+        "wavFileName": "database\\audiofiles\\default.wav",
+        "txtFileName": "database\\audiofiles\\default.txt"
     }
 }
