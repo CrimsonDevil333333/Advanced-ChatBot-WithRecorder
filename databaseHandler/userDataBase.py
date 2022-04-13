@@ -1,4 +1,7 @@
 import json
+
+from regex import E
+from exceptions.AliasAllreadyAvailableException import AliasAllreadyAvailableException
 from exceptions.UserAlreadyAvailableException import UserAlreadyAvailableException
 from exceptions.UserNotFoundException import UserNotFoundException
 from exceptions.WrongPasswordException import WrongPasswordException
@@ -57,11 +60,30 @@ class UserDataBase:
         except KeyError:
             raise UserNotFoundException
 
+
     def saveAliasForUser(self, userName, userAlias):
         pass
 
     def getUserAlias(self, userName):
-        pass
+        try:
+            data = self.data[userName]
+            self.updateSelfFields(userName=userName, userAllias=data["allAllias"], userEmail=data["userEmail"], userPass=data["userPassword"])
+            return data["allAllias"]
+        except:
+            raise UserNotFoundException
+
+    def updateAliasField(self, alias):
+        try:
+            dummyalias = self.allAllias.split(",")
+            for r in dummyalias:
+                if r == alias:
+                    raise AliasAllreadyAvailableException
+            self.allAllias = self.allAllias[:-1]
+            self.allAllias = f"{self.allAllias},{alias},"
+            self.updateDatabase()
+        except:
+            raise AliasAllreadyAvailableException
+        
 
     def resetUserPassword(self, userName, oldPassword, newPassword):
         pass
