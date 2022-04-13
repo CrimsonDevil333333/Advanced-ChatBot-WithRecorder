@@ -17,6 +17,7 @@ from kivy.core.window import Window
 from matplotlib.pyplot import text
 from pyspark import *
 from tables import Cols
+from exceptions.AliasAllreadyAvailableException import AliasAllreadyAvailableException
 from exceptions.DummyException import DummyException
 
 from pages.TransitionPage import TransitionPage
@@ -233,7 +234,6 @@ class LoginPage(Screen):
             o_s.screen_manager.current = "TransitionScreen"
             Clock.schedule_once(self.validation_false, .6)
         
-               
     def validation_false(self, _):
         o_s.screen_manager.current = "LoginScreen"
     def chatpage_fn(self, _):
@@ -417,7 +417,7 @@ class SaveAliasPage(Screen):
         
         self.save_and_go_btn = Button(text='Save', size_hint=(.3, .1), pos_hint={'center_x': .68, 'y': 0.2})
         self.add_widget(self.save_and_go_btn)
-        # self.login_btn.bind(on_press=self.login_fn_after_validation)
+        self.save_and_go_btn.bind(on_press=self.save_data_in_db_fn)
 
     def back_btn_fn(self, _):
         transitionInfo = "Going Back"
@@ -431,6 +431,57 @@ class SaveAliasPage(Screen):
         except:
             print("ChatPage Instance allready there")
         o_s.screen_manager.current = "ChatScreen"
+
+    def refresh_page_fn(self, _):
+        try:
+            o_s.save_alias_page()
+        except:
+            print("Save allias page instance allready available")
+        o_s.screen_manager.current = "SaveAliasScreen"
+
+    def save_data_in_db_fn(self, _):
+        self.mp3_path = fr"{self.filepath.text}\{self.mp3.text}"
+        self.wav_path = fr"{self.filepath.text}\{self.wav.text}"
+        self.txt_path = fr"{self.filepath.text}\{self.txt.text}"
+        if self.mp3.text == "":
+            transitionInfo = "Mp3 File Name can't be blank"
+            o_s.transition_page.update_info(transitionInfo)
+            o_s.screen_manager.current = "TransitionScreen"
+            Clock.schedule_once(self.refresh_page_fn, .6)
+        elif self.alias.text == "":
+            transitionInfo = "Alias can't be blank"
+            o_s.transition_page.update_info(transitionInfo)
+            o_s.screen_manager.current = "TransitionScreen"
+            Clock.schedule_once(self.refresh_page_fn, .6)
+        
+        global loggedUserName
+
+        ud = UserDataBase()
+        ud.refreshDataBase()
+        try:
+            allias_list = ud.getUserAlias(loggedUserName)
+            print(allias_list.split(","))
+            ud.updateAliasField(self.alias.text)
+            allias_list = ud.getUserAlias(loggedUserName)
+            print(allias_list.split(","))
+            ud.refreshDataBase()
+
+            du = DatabaseUtils()
+            du.updateFileNamesAndPaths(alias=self.alias.text, mp3FileName=self.mp3_path, txtFileName=self.txt_path, wavFileName=self.wav_path)
+            du.updateDatabase()
+            
+            transitionInfo = "Saved Data Now Going Back"
+            o_s.transition_page.update_info(transitionInfo)
+            o_s.screen_manager.current = "TransitionScreen"
+            Clock.schedule_once(self.back_btn_fn1, .6)
+
+        except UserNotFoundException:
+            print("User Not Found")
+        except AliasAllreadyAvailableException:
+            transitionInfo = f"Select new Alias {self.alias.text} is allready there in database"
+            o_s.transition_page.update_info(transitionInfo)
+            o_s.screen_manager.current = "TransitionScreen"
+            Clock.schedule_once(self.refresh_page_fn, .6)
 
 
 

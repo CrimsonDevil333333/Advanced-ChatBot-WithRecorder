@@ -2,7 +2,7 @@
     "admin": {
         "userEmail": "admin@admin.admin",
         "userPassword": "admin",
-        "allAllias": "default,"
+        "allAllias": "default,dummy,"
     },
     "demo": {
         "userEmail": "admin@admin.admin",
@@ -27,11 +27,16 @@
     "vai": {
         "userEmail": "vai",
         "userPassword": "vai",
-        "allAllias": "default,"
+        "allAllias": "default,test,"
     },
     "mohit": {
         "userEmail": "mohit@mohit.com",
         "userPassword": "mohit",
         "allAllias": "default,"
+    },
+    "": {
+        "userEmail": "",
+        "userPassword": "",
+        "allAllias": ",pokemon"
     }
 }

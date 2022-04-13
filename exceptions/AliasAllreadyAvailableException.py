@@ -1,0 +1,2 @@
+class AliasAllreadyAvailableException(Exception):
+    pass
