@@ -8,10 +8,10 @@ from exceptions.NetworkException import NetworkException
 from logs.Logers import logs
 
 class BackendMain:
-    def __init__(self, Input = True, Output = True) -> None:
+    def __init__(self, Input = False, Output = False, Filepath = None) -> None:
         self.voice_input = Input
         self.voice_output = Output
-        self.ioc = InputOutputConnector()
+        self.ioc = InputOutputConnector(nlpFilePath= Filepath)
         self.maincontrol = MainController()
         self.vttc = VoiceToTextConverter()
 

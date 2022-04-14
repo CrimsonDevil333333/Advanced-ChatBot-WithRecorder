@@ -2,10 +2,14 @@ from databaseHandler.userDataBase import UserDataBase
 from exceptions.UserAlreadyAvailableException import UserAlreadyAvailableException
 from exceptions.UserNotFoundException import UserNotFoundException
 from exceptions.WrongPasswordException import WrongPasswordException
+
+from backend_main import BackendMain
+
 if __name__ == "__main__":
-    user = UserDataBase()
-    user.refreshDataBase()
     
+    bot = BackendMain( Filepath="database\\poksa\\dummy.txt")
+
+
     # Signup
     # try:
     #     user.createNewUser(userEmail="admin@admin.admin", userName="admin", userPassword="admin")

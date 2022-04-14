@@ -57,6 +57,9 @@ class InputOutputConnector:
             logs().debug("Sending query to AIML response section")
             return self.aimlResponse.standAloneInput(response)
         
+        except IndexError:
+            return webbrowser.open_new('www.google.com/search?q=' + response)
+
     # NLP with multiple files inclusions
     def nlpWithCustomFilePaths(self, nlpFilePath):
         self.nlpResponse = NLP(nlpFilePath)

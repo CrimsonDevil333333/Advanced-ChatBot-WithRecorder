@@ -11,8 +11,8 @@
     },
     "default": {
         "mp3FileName": "database\\audiofiles\\output.mp3",
-        "wavFileName": "database\\audiofiles\\default.wav",
-        "txtFileName": "database\\audiofiles\\default.txt"
+        "wavFileName": "database\\audiofiles\\output.wav",
+        "txtFileName": "database\\output.txt"
     },
     "dummy": {
         "mp3FileName": "database\\audiofiles\\dummy.mp3",

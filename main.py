@@ -15,9 +15,11 @@ from kivy.clock import Clock
 from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
 from matplotlib.pyplot import text
+from pydantic import FilePath
 from pyspark import *
 from tables import Cols
 from exceptions.AliasAllreadyAvailableException import AliasAllreadyAvailableException
+from exceptions.AliasNotFoundException import AliasNotFoundException
 from exceptions.DummyException import DummyException
 
 from pages.TransitionPage import TransitionPage
@@ -484,6 +486,114 @@ class SaveAliasPage(Screen):
             Clock.schedule_once(self.refresh_page_fn, .6)
 
 
+class LoadAliasPage(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.allias = self.getUserAliasForDisplay()
+        no_of_allias = len(self.allias)
+    
+
+        self.add_widget(Label(text='Your all Alias',font_size='40sp' ,color = "white",size_hint=(.45, .1), pos_hint={'x': .25, 'y': .87}))
+
+        if no_of_allias %2 == 0:
+            rows_required = no_of_allias/2
+        else:
+            rows_required = no_of_allias/2 +1
+
+        max_y = .79
+        min_y = .5
+        
+        MaxDiff = (max_y - min_y)/ rows_required
+        y_pos = max_y
+        
+        bottom_line1 = Screen()
+        for r in range(no_of_allias):
+            if r==0:
+                x_pos = .25
+                y_pos = y_pos
+            elif r % 2 == 0:
+                x_pos = .25
+                y_pos = y_pos - MaxDiff
+            else:
+                x_pos = .57
+            bottom_line1.add_widget(Label(text= self.allias[r] ,
+            color = "red", size_hint=(.15, .04), pos_hint={'x': x_pos, 'y': y_pos} ))
+
+        self.add_widget(bottom_line1)
+
+        self.ali = TextInput(multiline=False, size_hint=(.5, .05), pos_hint={'x': .25, 'y': .42})
+        self.add_widget(self.ali)
+        
+        self.back_btn = Button(text='Back', size_hint=(.3, .1), pos_hint={'center_x': .24, 'y': 0.2})
+        self.add_widget(self.back_btn)
+        self.back_btn.bind(on_press=self.back_btn_fn)
+        
+        self.load_and_go_btn = Button(text='Load', size_hint=(.3, .1), pos_hint={'center_x': .68, 'y': 0.2})
+        self.add_widget(self.load_and_go_btn)
+        self.load_and_go_btn.bind(on_press=self.load_data_btn)
+
+    def back_btn_fn(self, _):
+        try:
+            o_s.chat_page()
+        except:
+            print("Instance allready available")
+        o_s.screen_manager.current = "ChatScreen"
+
+    def load_data_btn(self, _):
+        flag = 0
+        for r in self.allias:
+            if r == self.ali.text:
+                flag = 1
+        if(flag):
+            du = DatabaseUtils()
+            try:
+                paths = du.getFilesPathOnBaseOfAlias(self.ali.text)
+
+                # TODO 
+                print(paths["txtFileName"])
+                global bot
+                # bot = BackendMain(Filepath=paths["txtFileName"])
+                try:
+                    dumppp = BackendMain(Filepath=paths["txtFileName"])
+                    bot = dumppp
+                except:
+                    print("Data Not found")
+                    transitionInfo = f"Txt File seems to be missing from Actual Path "
+                    o_s.transition_page.update_info(transitionInfo)
+                    o_s.screen_manager.current = "TransitionScreen"
+                    Clock.schedule_once(self.getOnSamePage, 45)
+                self.ali.text = ""
+                transitionInfo = f"Files loaded now going back..."
+                o_s.transition_page.update_info(transitionInfo)
+                o_s.screen_manager.current = "TransitionScreen"
+                Clock.schedule_once(self.back_btn_fn, 1)
+
+            except AliasNotFoundException:
+                transitionInfo = f"Alias not found in fileStructure Database"
+                o_s.transition_page.update_info(transitionInfo)
+                o_s.screen_manager.current = "TransitionScreen"
+                Clock.schedule_once(self.getOnSamePage, 1)
+        else:
+            self.ali.text = ""
+            transitionInfo = f"You have no such alias saved in your DataBase"
+            o_s.transition_page.update_info(transitionInfo)
+            o_s.screen_manager.current = "TransitionScreen"
+            Clock.schedule_once(self.getOnSamePage, 1)
+
+    def getOnSamePage(self,_):
+        try:
+            o_s.load_alias_page()
+        except:
+            print("Load allias page Instance allready available")
+        o_s.screen_manager.current = "LoadAliasScreen"
+
+    def getUserAliasForDisplay(self):
+        global loggedUserName
+        ud = UserDataBase()
+        ud.refreshDataBase
+        allias_list = ud.getUserAlias(loggedUserName)
+        allias_list = allias_list[:-1]
+        return allias_list.split(",")
 
 
 
@@ -649,7 +759,17 @@ class ChatPage(GridLayout):
         o_s.screen_manager.current = "SaveAliasScreen"
 
     def load_alias_fn(self, _):
-        self.new_message.text = "Load alias"
+        transitionInfo = f"Going to Load Recording Session"
+        o_s.transition_page.update_info(transitionInfo)
+        o_s.screen_manager.current = "TransitionScreen"
+        Clock.schedule_once(self.load_alias_fn2, 0.6)
+
+    def load_alias_fn(self, _):
+        try:
+            o_s.load_alias_page()
+        except:
+            print("Load alias instance allready created")
+        o_s.screen_manager.current = "LoadAliasScreen"
 
     def rec_meeting_fn(self, _):
         transitionInfo = f"Going to Recording"
@@ -732,6 +852,12 @@ class MainApp(App):
         self.record_meeting_page = RecordMeetingPage()
         screen = Screen(name= "RecordMeetingScreen")
         screen.add_widget(self.record_meeting_page)
+        self.screen_manager.add_widget(screen) 
+        
+    def load_alias_page(self):
+        self.load_alias_page = LoadAliasPage()
+        screen = Screen(name= "LoadAliasScreen")
+        screen.add_widget(self.load_alias_page)
         self.screen_manager.add_widget(screen) 
         
     

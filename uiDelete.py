@@ -11,6 +11,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
 from matplotlib.pyplot import text
 from exceptions.AliasAllreadyAvailableException import AliasAllreadyAvailableException
+from exceptions.AliasNotFoundException import AliasNotFoundException
 from exceptions.UserNotFoundException import UserNotFoundException
 
 from modules.recorder.InternalVoiceRecoder import InternalVoiceRecorder
@@ -25,69 +26,75 @@ class SaveAliasPage(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 # alias, filepath, mp3, mvc, txt
+        self.allias = self.getUserAliasForDisplay()
+        no_of_allias = len(self.allias)
+    
 
-        self.add_widget(Label(text='File Path', color = "white",size_hint=(.45, .1), pos_hint={'x': .25, 'y': .87}))
+        self.add_widget(Label(text='Your all Alias',font_size='40sp' ,color = "white",size_hint=(.45, .1), pos_hint={'x': .25, 'y': .87}))
 
-        self.filepath = TextInput(multiline=False, size_hint=(.5, .05), pos_hint={'x': .25, 'y': .82})
-        self.add_widget(self.filepath)
+        if no_of_allias %2 == 0:
+            rows_required = no_of_allias/2
+        else:
+            rows_required = no_of_allias/2 +1
 
+        max_y = .79
+        min_y = .5
         
-        self.add_widget(Label(text='Mp3 File Name', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .65}))
+        MaxDiff = (max_y - min_y)/ rows_required
+        y_pos = max_y
         
-        self.mp3 = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'x': .5, 'y': .675})
-        self.add_widget(self.mp3)
-        
-        self.add_widget(Label(text='WAV File Name', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .55}))
-        
-        self.wav = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'x': .5, 'y': .575})
-        self.add_widget(self.wav)
+        bottom_line1 = Screen()
+        for r in range(no_of_allias):
+            if r==0:
+                x_pos = .25
+                y_pos = y_pos
+            elif r % 2 == 0:
+                x_pos = .25
+                y_pos = y_pos - MaxDiff
+            else:
+                x_pos = .57
+            bottom_line1.add_widget(Label(text= self.allias[r] ,
+            color = "red", size_hint=(.15, .04), pos_hint={'x': x_pos, 'y': y_pos} ))
 
-        self.add_widget(Label(text='TEXT File Name', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .45}))
-        
-        self.txt = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'x': .5, 'y': .475})
-        self.add_widget(self.txt)
+        self.add_widget(bottom_line1)
 
-        self.add_widget(Label(text='Alias', size_hint=(.45, .1), pos_hint={'x': .05, 'y': .35}))
-        
-        self.alias = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'x': .5, 'y': .375})
-        self.add_widget(self.alias)
+        self.ali = TextInput(multiline=False, size_hint=(.5, .05), pos_hint={'x': .25, 'y': .42})
+        self.add_widget(self.ali)
         
         self.back_btn = Button(text='Back', size_hint=(.3, .1), pos_hint={'center_x': .24, 'y': 0.2})
         self.add_widget(self.back_btn)
         # self.back_btn.bind(on_press=self.back_btn_fn)
         
-        self.save_and_go_btn = Button(text='Save', size_hint=(.3, .1), pos_hint={'center_x': .68, 'y': 0.2})
-        self.add_widget(self.save_and_go_btn)
-        self.save_and_go_btn.bind(on_press=self.save_data_in_db_fn)
+        self.load_and_go_btn = Button(text='Load', size_hint=(.3, .1), pos_hint={'center_x': .68, 'y': 0.2})
+        self.add_widget(self.load_and_go_btn)
+        self.load_and_go_btn.bind(on_press=self.load_data_btn)
 
-    def save_data_in_db_fn(self, _):
-        self.mp3_path = fr"{self.filepath.text}\{self.mp3.text}"
-        self.wav_path = fr"{self.filepath.text}\{self.wav.text}"
-        self.txt_path = fr"{self.filepath.text}\{self.txt.text}"
-        if self.mp3.text == "":
-            print("It cant be blank ")
-            # TODO -> break loop here dont proceed further
-    
-        loggedUserName = "admin"
-
-        ud = UserDataBase()
-        ud.refreshDataBase()
-        try:
-            allias_list = ud.getUserAlias(loggedUserName)
-            print(allias_list.split(","))
-            ud.updateAliasField(self.alias.text)
-            allias_list = ud.getUserAlias(loggedUserName)
-            print(allias_list.split(","))
-            ud.refreshDataBase()
-
+    def load_data_btn(self, _):
+        flag = 0
+        for r in self.allias:
+            if r == self.ali.text:
+                flag = 1
+        if(flag):
             du = DatabaseUtils()
-            du.updateFileNamesAndPaths(alias=self.alias.text, mp3FileName=self.mp3_path, txtFileName=self.txt_path, wavFileName=self.wav_path)
-            du.updateDatabase()
-            
-        except UserNotFoundException:
-            print("User Not Found")
-        except AliasAllreadyAvailableException:
-            print("Select new alias")
+            try:
+                paths = du.getFilesPathOnBaseOfAlias(self.ali.text)
+
+                # TODO 
+                print(paths)
+
+            except AliasNotFoundException:
+                print("Alias not found in fileStructure Database")
+        else:
+            print("You have no such alias saved in your DataBase")
+            self.ali.text = ""
+
+    def getUserAliasForDisplay(self):
+        loggedUserName = "vai"
+        ud = UserDataBase()
+        ud.refreshDataBase
+        allias_list = ud.getUserAlias(loggedUserName)
+        allias_list = allias_list[:-1]
+        return allias_list.split(",")
 
 class MainApp(App):
     def build(self):
