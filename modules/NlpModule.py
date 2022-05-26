@@ -15,10 +15,6 @@ from nltk.stem import WordNetLemmatizer
 
 from exceptions.NlpQueryNotFoundException import NlpQueryNotFoundException
 
-
-
-
-
 class NLP:
     def __init__(self, filePath = None) -> None:
         self.firstTimeDownload()
@@ -62,11 +58,8 @@ class NLP:
     def preprocessingNlp(self):
         self.lemmer = WordNetLemmatizer()
         self.remove_punct_dict = dict((ord(punct), None) for punct in string.punctuation)
-        
     def LemTokens(self, tokens):
         return [self.lemmer.lemmatize(token) for token in tokens]
-        
-    
     def LemNormalize(self, text):
         return self.LemTokens(nltk.word_tokenize(text.lower().translate(self.remove_punct_dict)))
 

@@ -73,7 +73,7 @@ class MainPage(Screen):
         self.quit_btn = Button(text='Exit', size_hint=(.5, .1), pos_hint={'center_x': .5, 'y': 0.3})
         self.add_widget(self.quit_btn)
         self.quit_btn.bind(on_press=self.exit_app_fn )
- 
+
     def login_fn(self, _):
         transitionInfo = f"Login Page ..."
         o_s.transition_page.update_info(transitionInfo)
@@ -385,7 +385,6 @@ class RecordMeetingPage(Screen):
 class SaveAliasPage(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-# alias, filepath, mp3, mvc, txt
 
         self.add_widget(Label(text='File Path', color = "white",size_hint=(.45, .1), pos_hint={'x': .25, 'y': .87}))
 
