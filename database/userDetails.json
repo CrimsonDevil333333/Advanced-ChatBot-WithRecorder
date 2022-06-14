@@ -1,0 +1,42 @@
+{
+    "admin": {
+        "userEmail": "admin@admin.admin",
+        "userPassword": "admin",
+        "allAllias": "default,dummy,"
+    },
+    "demo": {
+        "userEmail": "admin@admin.admin",
+        "userPassword": "admin",
+        "allAllias": "default,"
+    },
+    "admis": {
+        "userEmail": "sa",
+        "userPassword": "sa",
+        "allAllias": "default,"
+    },
+    "sa": {
+        "userEmail": "sa",
+        "userPassword": "sa",
+        "allAllias": "default,"
+    },
+    "dummy": {
+        "userEmail": "123@agas.com",
+        "userPassword": "dummy",
+        "allAllias": "default,"
+    },
+    "vai": {
+        "userEmail": "vai",
+        "userPassword": "vai",
+        "allAllias": "default,test,test2,test3,test4,"
+    },
+    "mohit": {
+        "userEmail": "mohit@mohit.com",
+        "userPassword": "mohit",
+        "allAllias": "default,"
+    },
+    "": {
+        "userEmail": "",
+        "userPassword": "",
+        "allAllias": ",pokemon"
+    }
+}

@@ -1,0 +1,12 @@
+wikipedia
+python-aiml
+requests
+speechrecognition
+pyaudio
+pyttsx3
+gtts
+json
+sklearn
+nltk
+kivy
+bs4
