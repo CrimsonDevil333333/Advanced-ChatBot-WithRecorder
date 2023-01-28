@@ -37,7 +37,7 @@ global Input
 global Output
 
 global vi
-
+print("start")
 Input = False
 Output = False
 loggedUserName = ""
